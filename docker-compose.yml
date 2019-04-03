@@ -1,4 +1,4 @@
-version: '2'
+version: '3.6'
 services:
   nginxServer:
     image: nginx:latest
@@ -11,4 +11,6 @@ services:
         - php
   php:
     image: php:7-fpm
+    volumes:
+        - ./code:/code
 
