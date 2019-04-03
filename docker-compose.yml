@@ -1,12 +1,12 @@
 version: '3.6'
 services:
     lighttpdServer:
-        image: thibremy
+        image: cyberduck/docker-php-fpm-lighttpd:php-7.1
         ports:
             - "8081:80"
         volumes:
             - ./htdocs:/var/www/localhost
-    
+
     nginxServer:
         image: nginx:latest
         ports:
