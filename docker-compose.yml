@@ -6,13 +6,13 @@ services:
             - "8082:80"
         volumes:
             - ./htdocs:/var/www/html
-            
+
     lighttpdServer:
-        image: cyberduck/docker-php-fpm-lighttpd:php-7.1
+        image: thibremy/lighttpd
         ports:
             - "8081:80"
         volumes:
-            - ./lumen:/var/www/localhost
+            - ./lumen:/var/www/localhost/htdocs
 
     nginxServer:
         image: nginx:latest
