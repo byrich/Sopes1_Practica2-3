@@ -4,7 +4,9 @@ services:
         container_name: DBcassandra
         image: cassandra
         ports:
-            - "8083:9042"    
+            - "9042:9042"  
+        environment:
+            -  CASSANDRA_RPC_ADDRESS=0.0.0.0
     apacheServer:
         container_name: apacheServer
         image: php:7.0-apache
