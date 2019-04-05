@@ -1,67 +1,59 @@
-FROM indragunawan/nginx-php:ubuntu-php7.0
+FROM    debian:jessie
+ENV DEBIAN_FRONTEND noninteractive
 
-MAINTAINER Indra Gunawan <guind.online@gmail.com>
+# install required packges
+RUN apt-get update -qq && \
+    apt-get upgrade -y && \
+    apt-get install -y php5-cli \
+    php5-mysqlnd php5-curl php5-apcu php5-xdebug php5-gd php5-sqlite php5-ssh2 \
+    php-pear mysql-client curl openssl sudo ca-certificates \
+    g++ make cmake libuv-dev libssl-dev libgmp-dev php5-dev libpcre3-dev git && \
+    apt-get clean autoclean && \
+    apt-get autoremove --yes && \
+    rm -rf /var/lib/{apt,dpkg,cache,log}/
 
-# NodeJS and NPM
-RUN \
-    apt-get update \
-    && curl -sL https://deb.nodesource.com/setup_8.x | bash - \
-    && apt-get install -y nodejs jpegoptim \
-    && npm install -g npm \
-    && npm install -g bower \
-    && npm install -g gulp \
-    && echo '{ "allow_root": true }' > ~/.bowerrc \
+# integrate cassandra php connector
+ENV CASSANDRA_PHP_DRIVER_GIT_TAG v1.0.0
 
-    # Install Yarn
-    && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
-    && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
-    && apt-get update \
-    && apt-get install yarn libelf1
+RUN git clone --branch ${CASSANDRA_PHP_DRIVER_GIT_TAG} https://github.com/datastax/php-driver.git /usr/src/datastax-php-driver && \
+    cd /usr/src/datastax-php-driver && \
+    git submodule update --init && \
+    cd ext && \
+    ./install.sh && \
+    echo "; DataStax PHP Driver\nextension=cassandra.so" >/etc/php5/mods-available/cassandra.ini
 
-# Install Cassandra driver
-RUN \
-    apt-get update && apt-get install -y --no-install-recommends \
-        cmake \
-        g++ \
-        libgmp-dev \
-        openssl \
-        libssl-dev \
-        libpcre3-dev \
-        make
+# integrate zend loader
+ENV ZEND_GUARD_LOADER_VERSION 7.0.0
 
-RUN \
-    cd /tmp \
-    && wget --quiet http://downloads.datastax.com/cpp-driver/ubuntu/16.04/dependencies/libuv/v1.11.0/libuv_1.11.0-1_amd64.deb \
-    && wget --quiet http://downloads.datastax.com/cpp-driver/ubuntu/16.04/dependencies/libuv/v1.11.0/libuv-dev_1.11.0-1_amd64.deb \
-    && wget --quiet http://downloads.datastax.com/cpp-driver/ubuntu/16.04/dependencies/libuv/v1.11.0/libuv-dbg_1.11.0-1_amd64.deb \
-    && dpkg -i libuv_1.11.0-1_amd64.deb \
-    && dpkg -i libuv-dev_1.11.0-1_amd64.deb \
-    && dpkg -i libuv-dbg_1.11.0-1_amd64.deb \
+RUN curl -L --silent http://downloads.zend.com/guard/${ZEND_GUARD_LOADER_VERSION}/zend-loader-php5.6-linux-x86_64.tar.gz | tar -xz --strip=1 -C /tmp && \
+    mkdir -p /usr/lib/php5/zend-loader && \
+    cp /tmp/ZendGuardLoader.so /tmp/opcache.so /usr/lib/php5/zend-loader/ && \
+    echo "zend_extension=/usr/lib/php5/zend-loader/ZendGuardLoader.so" >/etc/php5/mods-available/zend_guard_loader.ini && \
+    echo "zend_extension=/usr/lib/php5/zend-loader/opcache.so" >>/etc/php5/mods-available/zend_guard_loader.ini && \
+    rm -rf /tmp/*
 
-    && wget --quiet http://downloads.datastax.com/cpp-driver/ubuntu/16.04/cassandra/v2.7.0/cassandra-cpp-driver_2.7.0-1_amd64.deb \
-    && wget --quiet http://downloads.datastax.com/cpp-driver/ubuntu/16.04/cassandra/v2.7.0/cassandra-cpp-driver-dev_2.7.0-1_amd64.deb \
-    && wget --quiet http://downloads.datastax.com/cpp-driver/ubuntu/16.04/cassandra/v2.7.0/cassandra-cpp-driver-dbg_2.7.0-1_amd64.deb \
-    && dpkg -i cassandra-cpp-driver_2.7.0-1_amd64.deb \
-    && dpkg -i cassandra-cpp-driver-dev_2.7.0-1_amd64.deb \
-    && dpkg -i cassandra-cpp-driver-dbg_2.7.0-1_amd64.deb \
+# integrate librdkafka
+ENV LIBRDKAFKA_VERSION 0.8.6-1
 
-    && wget --quiet http://downloads.datastax.com/php-driver/ubuntu/16.04/cassandra/v1.3.1/php7.0-cassandra-driver_1.3.1~stable-1_amd64.deb \
-    && dpkg -i php7.0-cassandra-driver_1.3.1~stable-1_amd64.deb \
+RUN mkdir -p /usr/src/librdkafka && \
+    curl -L --silent https://github.com/edenhill/librdkafka/archive/debian/${LIBRDKAFKA_VERSION}.tar.gz | tar -xz --strip=1 -C /usr/src/librdkafka && \
+    cd /usr/src/librdkafka && \
+    dpkg-buildpackage -B && \
+    dpkg -i /usr/src/librdkafka1_${LIBRDKAFKA_VERSION}_amd64.deb && \
+    dpkg -i /usr/src/librdkafka-dev_${LIBRDKAFKA_VERSION}_amd64.deb 
 
-    && phpenmod cassandra
+# integrate rdkafka extension
+ENV     RDKAFKA_PHP_GIT_SHA1 416a0f992a0d657cf4cdfbe90ad18f882db79e0a
 
-# Install wkhtmltopdf
-RUN \
-    apt-get update && apt-get install -y --no-install-recommends \
-        wkhtmltopdf
+RUN     git clone -o ${RDKAFKA_PHP_GIT_SHA1} https://github.com/arnaud-lb/php-rdkafka /usr/src/php-rdkafka && \
+        cd /usr/src/php-rdkafka && \
+        phpize && \
+        ./configure && \
+        make && \
+        make install && \
+        echo "; RdKafka Extension\nextension=rdkafka.so" >/etc/php5/mods-available/rdkafka.ini
 
-# Install php-soap
-RUN \
-    apt-get update && apt-get install -y --no-install-recommends \
-        php7.0-soap
 
-# Clear cache
-RUN \
-    apt-get clean \
-    && apt-get autoremove --purge \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ADD docker-entrypoint.sh /usr/local/sbin/docker-entrypoint.sh
+
+ENTRYPOINT  ["/usr/local/sbin/docker-entrypoint.sh"]
