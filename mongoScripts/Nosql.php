@@ -3,6 +3,10 @@ use MongoDB\Driver\Manager;
 use MongoDB\Driver\BulkWrite;
 use MongoDB\Driver\Query;
 
+if ($_GET["db"]==2)//si es mongo
+{
+
+}
 $con = new Manager('mongodb://mongodb:27017');
 $miDB = "hola.adios";
 $bw = new BulkWrite();

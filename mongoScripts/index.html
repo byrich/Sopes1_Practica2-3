@@ -1,14 +1,69 @@
 <!DOCTYPE html>
 <html>
+<head>
+<style>
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+</style>
+</head>
 <body>
 
-<form action="/action_page.php" method="get" target="_blank">
-  First name: <input type="text" name="fname"><br>
-  Last name: <input type="text" name="lname"><br>
-  <input type="submit" value="Submit">
+<h2>HTML Table</h2>
+<form action="acciones.php" method="get" id="formulario" target="_blank">
+<table>
+  <tr>
+    <th colspan="2">Tipo de Base de Datos</th>
+    <th><input type="text" id="dbtxt" value="mongo"><input type="hidden" name="bd" id="db" value="2" ><input type="hidden" id="accion" name="accion" value="2" ></th>
+    <!--th>Country</th-->
+  </tr>
+  <tr>
+    <td><input type="button" value="Cassandra" onclick="selectDB(1)"></td>
+    <td colspan="2"><input type="button" value="Mongo" onclick="selectDB(2)"></td>
+  </tr>
+  <tr>
+    <th colspan="3">acciones</th>
+    <!--th>Country</th-->
+  </tr>
+  <tr>
+    <td><input type="button" value="insertar" onclick="darleSubmit(1)"></td>
+    <td><input type="button" value="eliminar" onclick="darleSubmit(2)"></td>
+    <td><input type="button" value="consultar" onclick="darleSubmit(3)"></td>
+  </tr>
+  <tr>
+    <th colspan="3"><textarea name="mensaje" rows="4" cols="50" width="80%">
+you will learn how to make a website. We offer free tutorials in all web development technologies. 
+</textarea></th>
+    <!--th>Country</th-->
+  </tr>
+</table>
+  <!--input type="submit" value="Submit"-->
 </form>
-
-<p>Click on the submit button, and the input will be sent to a page on the server called "/action_page.php".</p>
-
+<script type="text/javascript">
+  var form = document.getElementById("formulario");
+  function selectDB(argument) {
+    var yea2 = document.getElementById("dbtxt");
+    var yea = document.getElementById("db");
+    yea.value = argument;
+    yea2.value = (argument == 1)?"Cassandra":"MongoDb";
+  }
+  function darleSubmit(argument) {
+    var yea = document.getElementById("accion");
+    yea.value = argument;
+    form.submit();
+  }
+</script>
 </body>
 </html>
